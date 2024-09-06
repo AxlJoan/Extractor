@@ -133,7 +133,7 @@ try:
     with mysql_con.cursor() as cursor:
         # Crear la tabla en MySQL si no existe
         cursor.execute("""
-        CREATE TABLE IF NOT EXISTS extraccion4 (
+        CREATE TABLE IF NOT EXISTS extraccion5 (
             id INT AUTO_INCREMENT PRIMARY KEY,
             chat_row_id INT,
             timestamp DATETIME,
@@ -156,7 +156,7 @@ try:
         
         # Preparar la consulta SQL para insertar los datos
         add_message = """
-        INSERT INTO extraccion4
+        INSERT INTO extraccion5
         (chat_row_id, timestamp, received_timestamp, text_data, from_me, number, number2, status, verified_name, server, device, group_name, description, cliente, estado, municipio) 
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
         """
