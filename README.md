@@ -11,7 +11,7 @@ Sigue estos pasos para configurar el emulador y hacer que el código funcione au
 ### Actualización de paquetes
 Abre Termux y ejecuta los siguientes comandos para actualizar los paquetes:
 
-'''
+```
 pkg update
 pkg upgrade
 pkg install git
@@ -20,27 +20,27 @@ pkg install python-pandas -y
 pip install mysql-connector-python
 pip install emoji
 termux-setup-storage
-'''
+```
 
 ### Clonar el Repositorio
-'''
+```
 git clone https://github.com/
-'''
+```
 
 ### Moverse a la carpeta del repositorio
-'''
+```
 cd 
-'''
+```
 
 ### Permisos para el script
 Otorga permisos de ejecución a los scripts necesarios:
-'''
+```
 chmod +x sacar.sh
 chmod +x main.sh
-'''
+```
 
 ### Ejecución automática del código
 Para ejecutar el código de manera automática, ejecuta el script principal:
-'''
+```
 ./main.sh
-'''
+```
