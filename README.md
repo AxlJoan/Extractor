@@ -28,7 +28,7 @@ pip install emoji
 Clona el repositorio necesario ejecutando el siguiente comando:
 
 ```sh
-git clone https://github.com/TheDaffyFife1/extractor.git
+git clone https://github.com/AxlJoan/Extractor.git
 ```
 
 ### Permisos para los Scripts
