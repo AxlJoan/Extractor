@@ -7,7 +7,7 @@ termux-wake-lock
 sleep 60
 
 # Ejecutar el script combinado
-sh /data/data/com.termux/files/home/Extractor/sacarCombinado.sh
+bash /data/data/com.termux/files/home/Extractor/sacarCombinado.sh
 
 # Ejecutar el script Python
 python /data/data/com.termux/files/home/Extractor/extractor2.py
