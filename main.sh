@@ -7,10 +7,10 @@ termux-wake-lock
 sleep 60
 
 # Ejecutar el script combinado
-sh /data/data/com.termux/files/home/extractor/sacarCombinado.sh
+sh /data/data/com.termux/files/home/Extractor/sacarCombinado.sh
 
 # Ejecutar el script Python
-python /data/data/com.termux/files/home/extractor/extractor2.py
+python /data/data/com.termux/files/home/Extractor/extractor2.py
 
 # Liberar el bloqueo de la pantalla
 termux-wake-unlock
