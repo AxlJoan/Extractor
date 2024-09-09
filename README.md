@@ -43,7 +43,7 @@ termux-setup-storage
 Otorga permisos de ejecución a los scripts necesarios:
 
 ```sh
-chmod +x sacarCombinado
+chmod +x sacarCombinado.sh
 chmod +x main.sh
 ```
 ### Cambiar formato de archivo para poder ejecutar correctamente el código
