@@ -16,4 +16,4 @@ python /data/data/com.termux/files/home/Extractor/extractor2.py
 termux-wake-unlock
 
 # Iniciar el servicio de cron
-crond start
+# crond start (En revisión)
