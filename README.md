@@ -46,7 +46,13 @@ Otorga permisos de ejecución a los scripts necesarios:
 chmod +x sacarCombinado.sh
 chmod +x main.sh
 ```
-### Cambiar formato de archivo para poder ejecutar correctamente el código
+### Ejecución Automática del Código
+Para ejecutar el código de manera automática, ejecuta el script principal:
+```sh
+./main.sh
+```
+### Ejecución manual del código
+## Cambiar formato de archivo para poder ejecutar correctamente el código
 Primero ocupamos usar dos2unix para convertir sacarCombinado.sh de formato DOS a formanto Unix
 ```
 pkg install dos2unix
@@ -55,12 +61,6 @@ Luego convierte el archivo:
 ```
 dos2unix sacarCombinado.sh
 ```
-### Ejecución Automática del Código
-Para ejecutar el código de manera automática, ejecuta el script principal:
-```sh
-./main.sh
-```
-### Ejecución manual del código
 Lo ejecutamos con bash
 ```
 bash sacarCombinado.sh
