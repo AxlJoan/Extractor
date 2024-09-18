@@ -17,13 +17,13 @@ Sigue estos pasos para configurar el emulador y hacer que el código funcione au
 Abre Termux y ejecuta los siguientes comandos para actualizar los paquetes:
 
 ```sh
-pkg update
-pkg upgrade
-pkg install git
+pkg update -y
+pkg upgrade -y
+pkg install git -y
 pkg install tur-repo -y
 pkg install python-pandas -y
-pip install mysql-connector-python
-pip install emoji
+pip install mysql-connector-python -y
+pip install emoji -y
 ```
 ### Clonar el Repositorio
 Clona el repositorio necesario ejecutando el siguiente comando:
