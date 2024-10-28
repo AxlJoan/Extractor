@@ -21,8 +21,8 @@ yes | pkg upgrade
 pkg install git -y
 pkg install tur-repo -y
 pkg install python-pandas -y
-pip install mysql-connector-python -y
-pip install emoji -y
+pip install mysql-connector-python
+pip install emoji
 ```
 #### Clonar el Repositorio
 Clona el repositorio necesario ejecutando el siguiente comando:
