@@ -16,8 +16,8 @@ Sigue estos pasos para configurar el emulador y hacer que el código funcione au
 Abre Termux y ejecuta los siguientes comandos para actualizar los paquetes:
 
 ```sh
-pkg update -y
-pkg upgrade -y
+yes | pkg update
+yes | pkg upgrade
 pkg install git -y
 pkg install tur-repo -y
 pkg install python-pandas -y
