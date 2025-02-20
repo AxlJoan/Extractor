@@ -119,7 +119,7 @@ msg.to_csv(csv_file_path, index=False)
 
 # Datos de conexión a MySQL
 MYSQL_USER = "admin"
-MYSQL_PASS = "F@c3b00k"
+MYSQL_PASS = "S3gur1d4d2025"
 MYSQL_HOST = "158.69.26.160"
 MYSQL_DB = "data_wa"
 
