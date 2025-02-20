@@ -27,23 +27,41 @@ def get_or_prompt_config():
 # Uso de la función para obtener la configuración
 config = get_or_prompt_config()
 
-# Conexión y lectura de la base de datos msgstore.db
+# Conexión y lectura de la base de datos msgstore.db (con verificación de la existencia del archivo)
+msgstore_path = '/sdcard/msgstore.db'  # Ruta original
+backup_path = '/storage/emulated/0/WhatsApp/Databases/msgstore.db'  # Nueva ruta
+
+# Intentar abrir la base de datos msgstore.db en la ruta original
 try:
-    with sqlite3.connect('/sdcard/msgstore.db') as con:
+    with sqlite3.connect(msgstore_path) as con:
         try:
             chv = pd.read_sql_query("SELECT * from chat_view", con)
         except pd.io.sql.DatabaseError:
             chv = None  # En caso de que el query no devuelva resultados
-        
+
         usuarios = pd.read_sql_query("SELECT * from 'jid'", con)
         msg = pd.read_sql_query("SELECT * from message", con)
 except sqlite3.Error as e:
-    print(f"Error conectando a la base de datos msgstore.db: {e}")
-    exit(1)
+    print(f"Error conectando a la base de datos en la ruta {msgstore_path}: {e}")
+    print("Intentando con la nueva ruta...")
+
+    # Intentar abrir la base de datos en la nueva ruta si no se pudo acceder a la ruta original
+    try:
+        with sqlite3.connect(backup_path) as con:
+            chv = pd.read_sql_query("SELECT * from chat_view", con)
+            usuarios = pd.read_sql_query("SELECT * from 'jid'", con)
+            msg = pd.read_sql_query("SELECT * from message", con)
+    except sqlite3.Error as e:
+        print(f"Error conectando a la base de datos en la nueva ruta {backup_path}: {e}")
+        exit(1)
 
 # Conexión y lectura de la base de datos wa.db
+wa_db_path = '/sdcard/wa.db'  # Ruta original
+wa_db_backup_path = '/storage/emulated/0/WhatsApp/Databases/wa.db'  # Nueva ruta
+
+# Intentar abrir la base de datos wa.db en la ruta original
 try:
-    with sqlite3.connect('/sdcard/wa.db') as con1:
+    with sqlite3.connect(wa_db_path) as con1:
         contacts = pd.read_sql_query("SELECT * from wa_contacts", con1)
         contacts['jid'] = contacts['jid'].str.split('@').str[0]
 
@@ -53,8 +71,23 @@ try:
         names = pd.read_sql_query("SELECT * from wa_vnames", con1)
         names['jid'] = names['jid'].str.split('@').str[0]
 except sqlite3.Error as e:
-    print(f"Error conectando a la base de datos wa.db: {e}")
-    exit(1)
+    print(f"Error conectando a la base de datos en la ruta {wa_db_path}: {e}")
+    print("Intentando con la nueva ruta...")
+
+    # Intentar abrir la base de datos en la nueva ruta si no se pudo acceder a la ruta original
+    try:
+        with sqlite3.connect(wa_db_backup_path) as con1:
+            contacts = pd.read_sql_query("SELECT * from wa_contacts", con1)
+            contacts['jid'] = contacts['jid'].str.split('@').str[0]
+
+            descriptions = pd.read_sql_query("SELECT * FROM wa_group_descriptions", con1)
+            descriptions['jid'] = descriptions['jid'].str.split('@').str[0]
+
+            names = pd.read_sql_query("SELECT * from wa_vnames", con1)
+            names['jid'] = names['jid'].str.split('@').str[0]
+    except sqlite3.Error as e:
+        print(f"Error conectando a la base de datos en la nueva ruta {wa_db_backup_path}: {e}")
+        exit(1)
 
 # Procesamiento de datos
 usuarios['user'] = usuarios['user'].astype(str).str[3:]
