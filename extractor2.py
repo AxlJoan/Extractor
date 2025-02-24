@@ -36,9 +36,6 @@ try:
     with sqlite3.connect(msgstore_path) as con:
         try:
             chv = pd.read_sql_query("SELECT * FROM chat_view", con)
-            # Imprimir columnas y primeras filas de chv
-            print("\n--- chat_view (ruta original) ---")
-            print("Columnas de chat_view:", chv.columns)
             print(chv.head())
         except pd.io.sql.DatabaseError:
             chv = None  # En caso de que el query no devuelva resultados
@@ -53,9 +50,6 @@ except sqlite3.Error as e:
     try:
         with sqlite3.connect(backup_path) as con:
             chv = pd.read_sql_query("SELECT * FROM chat_view", con)
-            # Imprimir columnas y primeras filas de chv
-            print("\n--- chat_view (ruta backup) ---")
-            print("Columnas de chat_view:", chv.columns)
             print(chv.head())
 
             usuarios = pd.read_sql_query("SELECT * from 'jid'", con)
@@ -108,9 +102,9 @@ msg = msg.dropna(subset=['text_data'])  # Eliminar filas donde text_data es NaN
 msg['timestamp'] = pd.to_datetime(msg['timestamp'], unit='ms')
 msg['received_timestamp'] = pd.to_datetime(msg['received_timestamp'], unit='ms')
 
-def mapping(id):
-    phone = chv.loc[chv['_id'] == id, 'raw_string_jid'].iloc[0]
-    return phone.split('@')[0]
+#def mapping(id):
+    #phone = chv.loc[chv['_id'] == id, 'raw_string_jid'].iloc[0]
+    #return phone.split('@')[0]
 
 def mapping2(id):
     return usuarios.loc[usuarios['_id'] == id, 'user'].iloc[0]
@@ -124,14 +118,14 @@ def mapping4(id):
 def mapping5(id):
     return chv.loc[chv['_id'] == id, 'subject'].iloc[0]
 
-msg['number'] = msg['chat_row_id'].apply(mapping)
+#msg['number'] = msg['chat_row_id'].apply(mapping)
 msg['number2'] = msg['chat_row_id'].apply(mapping2)
 msg = pd.merge(msg, contacts[['jid', 'status']], left_on='number2', right_on='jid', how='left').drop('jid', axis=1)
 msg = pd.merge(msg, names[['jid', 'verified_name']], left_on='number2', right_on='jid', how='left').drop('jid', axis=1)
 msg['server'] = msg['chat_row_id'].apply(mapping3)
 msg['device'] = msg['chat_row_id'].apply(mapping4)
 msg['group'] = msg['chat_row_id'].apply(mapping5)
-msg = pd.merge(msg, descriptions[['jid', 'description']], left_on='number', right_on='jid', how='left').drop('jid', axis=1)
+msg = pd.merge(msg, descriptions[['jid', 'description']], left_on='number2', right_on='jid', how='left').drop('jid', axis=1)
 
 # Reemplazar NaN por None para los campos enriquecidos
 msg = msg.where(pd.notnull(msg), None)
@@ -182,7 +176,6 @@ try:
             received_timestamp DATETIME,
             text_data TEXT,
             from_me BOOLEAN,
-            number VARCHAR(255),
             number2 VARCHAR(255),
             status VARCHAR(255),
             verified_name VARCHAR(255),
@@ -199,8 +192,8 @@ try:
         # Preparar la consulta SQL para insertar los datos
         add_message = """
         INSERT INTO extraccion4
-        (chat_row_id, timestamp, received_timestamp, text_data, from_me, number, number2, status, verified_name, server, device, group_name, description, cliente, estado, municipio) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+        (chat_row_id, timestamp, received_timestamp, text_data, from_me, number2, status, verified_name, server, device, group_name, description, cliente, estado, municipio) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
         """
         
         data_to_insert = [
@@ -210,7 +203,6 @@ try:
                 row['received_timestamp'],
                 row['text_data'],
                 row['from_me'],  # Convertido a booleano si es necesario
-                row['number'],
                 row['number2'],
                 row['status'],
                 row['verified_name'],
