@@ -35,7 +35,11 @@ backup_path = '/storage/emulated/0/WhatsApp/Databases/msgstore.db'  # Nueva ruta
 try:
     with sqlite3.connect(msgstore_path) as con:
         try:
-            chv = pd.read_sql_query("SELECT * from chat_view", con)
+            chv = pd.read_sql_query("SELECT * FROM chat_view", con)
+            # Imprimir columnas y primeras filas de chv
+            print("\n--- chat_view (ruta original) ---")
+            print("Columnas de chat_view:", chv.columns)
+            print(chv.head())
         except pd.io.sql.DatabaseError:
             chv = None  # En caso de que el query no devuelva resultados
 
@@ -48,7 +52,12 @@ except sqlite3.Error as e:
     # Intentar abrir la base de datos en la nueva ruta si no se pudo acceder a la ruta original
     try:
         with sqlite3.connect(backup_path) as con:
-            chv = pd.read_sql_query("SELECT * from chat_view", con)
+            chv = pd.read_sql_query("SELECT * FROM chat_view", con)
+            # Imprimir columnas y primeras filas de chv
+            print("\n--- chat_view (ruta backup) ---")
+            print("Columnas de chat_view:", chv.columns)
+            print(chv.head())
+
             usuarios = pd.read_sql_query("SELECT * from 'jid'", con)
             msg = pd.read_sql_query("SELECT * from message", con)
     except sqlite3.Error as e:
@@ -130,7 +139,7 @@ msg = msg.where(pd.notnull(msg), None)
 def remove_emojis(text):
     """Elimina emojis de un texto si no es None."""
     if text is None:
-        return text  # O devolver una cadena vacía si prefieres: return ''
+        return text
     return emoji.replace_emoji(text, replace='')
 
 msg['text_data'] = msg['text_data'].apply(remove_emojis)
