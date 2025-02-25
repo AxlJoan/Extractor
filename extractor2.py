@@ -31,7 +31,6 @@ config = get_or_prompt_config()
 msgstore_path = '/sdcard/msgstore.db'  # Ruta original
 backup_path = '/storage/emulated/0/WhatsApp/Databases/msgstore.db'  # Nueva ruta
 
-# Intentar abrir la base de datos msgstore.db en la ruta original
 try:
     with sqlite3.connect(msgstore_path) as con:
         try:
@@ -45,13 +44,10 @@ try:
 except sqlite3.Error as e:
     print(f"Error conectando a la base de datos en la ruta {msgstore_path}: {e}")
     print("Intentando con la nueva ruta...")
-
-    # Intentar abrir la base de datos en la nueva ruta si no se pudo acceder a la ruta original
     try:
         with sqlite3.connect(backup_path) as con:
             chv = pd.read_sql_query("SELECT * FROM chat_view", con)
             print(chv.head())
-
             usuarios = pd.read_sql_query("SELECT * from 'jid'", con)
             msg = pd.read_sql_query("SELECT * from message", con)
     except sqlite3.Error as e:
@@ -62,30 +58,23 @@ except sqlite3.Error as e:
 wa_db_path = '/sdcard/wa.db'  # Ruta original
 wa_db_backup_path = '/storage/emulated/0/WhatsApp/Databases/wa.db'  # Nueva ruta
 
-# Intentar abrir la base de datos wa.db en la ruta original
 try:
     with sqlite3.connect(wa_db_path) as con1:
         contacts = pd.read_sql_query("SELECT * from wa_contacts", con1)
         contacts['jid'] = contacts['jid'].str.split('@').str[0]
-
         descriptions = pd.read_sql_query("SELECT * FROM wa_group_descriptions", con1)
         descriptions['jid'] = descriptions['jid'].str.split('@').str[0]
-
         names = pd.read_sql_query("SELECT * from wa_vnames", con1)
         names['jid'] = names['jid'].str.split('@').str[0]
 except sqlite3.Error as e:
     print(f"Error conectando a la base de datos en la ruta {wa_db_path}: {e}")
     print("Intentando con la nueva ruta...")
-
-    # Intentar abrir la base de datos en la nueva ruta si no se pudo acceder a la ruta original
     try:
         with sqlite3.connect(wa_db_backup_path) as con1:
             contacts = pd.read_sql_query("SELECT * from wa_contacts", con1)
             contacts['jid'] = contacts['jid'].str.split('@').str[0]
-
             descriptions = pd.read_sql_query("SELECT * FROM wa_group_descriptions", con1)
             descriptions['jid'] = descriptions['jid'].str.split('@').str[0]
-
             names = pd.read_sql_query("SELECT * from wa_vnames", con1)
             names['jid'] = names['jid'].str.split('@').str[0]
     except sqlite3.Error as e:
@@ -98,13 +87,9 @@ usuarios['server'] = usuarios['server'].apply(lambda x: 'celular' if x.endswith(
 
 # Pre-procesamiento de msg
 msg = msg.loc[:, ['chat_row_id', 'timestamp', 'received_timestamp', 'text_data', 'from_me']]
-msg = msg.dropna(subset=['text_data'])  # Eliminar filas donde text_data es NaN
+msg = msg.dropna(subset=['text_data'])
 msg['timestamp'] = pd.to_datetime(msg['timestamp'], unit='ms')
 msg['received_timestamp'] = pd.to_datetime(msg['received_timestamp'], unit='ms')
-
-#def mapping(id):
-    #phone = chv.loc[chv['_id'] == id, 'raw_string_jid'].iloc[0]
-    #return phone.split('@')[0]
 
 def mapping2(id):
     return usuarios.loc[usuarios['_id'] == id, 'user'].iloc[0]
@@ -118,7 +103,6 @@ def mapping4(id):
 def mapping5(id):
     return chv.loc[chv['_id'] == id, 'subject'].iloc[0]
 
-#msg['number'] = msg['chat_row_id'].apply(mapping)
 msg['number2'] = msg['chat_row_id'].apply(mapping2)
 msg = pd.merge(msg, contacts[['jid', 'status']], left_on='number2', right_on='jid', how='left').drop('jid', axis=1)
 msg = pd.merge(msg, names[['jid', 'verified_name']], left_on='number2', right_on='jid', how='left').drop('jid', axis=1)
@@ -127,7 +111,6 @@ msg['device'] = msg['chat_row_id'].apply(mapping4)
 msg['group'] = msg['chat_row_id'].apply(mapping5)
 msg = pd.merge(msg, descriptions[['jid', 'description']], left_on='number2', right_on='jid', how='left').drop('jid', axis=1)
 
-# Reemplazar NaN por None para los campos enriquecidos
 msg = msg.where(pd.notnull(msg), None)
 
 def remove_emojis(text):
@@ -140,11 +123,9 @@ msg['text_data'] = msg['text_data'].apply(remove_emojis)
 msg['description'] = msg['description'].apply(remove_emojis)
 msg['group'] = msg['group'].apply(remove_emojis)
 
-# Asegurarse de que las fechas están en el formato correcto
 msg['timestamp'] = pd.to_datetime(msg['timestamp']).dt.strftime('%Y-%m-%d %H:%M:%S')
 msg['received_timestamp'] = pd.to_datetime(msg['received_timestamp']).dt.strftime('%Y-%m-%d %H:%M:%S')
 
-# Añadir configuración al DataFrame
 msg['cliente'] = config['cliente']
 msg['estado'] = config['estado']
 msg['municipio'] = config['municipio']
@@ -167,7 +148,7 @@ try:
         database=MYSQL_DB
     )
     with mysql_con.cursor() as cursor:
-        # Crear la tabla en MySQL si no existe
+        # Crear la tabla en MySQL si no existe, agregando una restricción UNIQUE para evitar duplicados
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS extraccion4 (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -185,13 +166,14 @@ try:
             description TEXT,
             cliente VARCHAR(255),
             estado VARCHAR(255),
-            municipio VARCHAR(255)
+            municipio VARCHAR(255),
+            UNIQUE KEY unique_message (chat_row_id, timestamp)
         )
         """)
         
-        # Preparar la consulta SQL para insertar los datos
+        # Preparar la consulta SQL para insertar los datos usando INSERT IGNORE
         add_message = """
-        INSERT INTO extraccion4
+        INSERT IGNORE INTO extraccion4
         (chat_row_id, timestamp, received_timestamp, text_data, from_me, number2, status, verified_name, server, device, group_name, description, cliente, estado, municipio) 
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
         """
@@ -202,7 +184,7 @@ try:
                 row['timestamp'],
                 row['received_timestamp'],
                 row['text_data'],
-                row['from_me'],  # Convertido a booleano si es necesario
+                row['from_me'],
                 row['number2'],
                 row['status'],
                 row['verified_name'],
