@@ -1,26 +1,26 @@
 #!/bin/sh
 
-# Mantener el dispositivo despierto
+# Mantener el dispositivo despierto permanentemente
 termux-wake-lock
 
-# Actualizar los repositorios y instalar dos2unix
-pkg update -y
-pkg install -y dos2unix
+while true; do
+    echo "Iniciando proceso de extracción..."
 
-# Convertir el archivo de formato DOS a formato UNIX
-dos2unix /data/data/com.termux/files/home/Extractor/sacarCombinado.sh
+    # Actualizar los repositorios y asegurar que dos2unix está instalado
+    pkg update -y
+    pkg install -y dos2unix
 
-# Esperar un minuto
-sleep 60
+    # Convertir el archivo de formato DOS a formato UNIX
+    dos2unix /data/data/com.termux/files/home/Extractor/sacarCombinado.sh
 
-# Ejecutar el script combinado
-bash /data/data/com.termux/files/home/Extractor/sacarCombinado.sh
+    # Ejecutar el script combinado
+    bash /data/data/com.termux/files/home/Extractor/sacarCombinado.sh
 
-# Ejecutar el script Python
-python /data/data/com.termux/files/home/Extractor/extractor2.py
+    # Ejecutar el script Python
+    python /data/data/com.termux/files/home/Extractor/extractor2.py
 
-# Liberar el bloqueo de la pantalla
-termux-wake-unlock
+    echo "Proceso completado. Esperando 10 minutos antes de la siguiente ejecución..."
 
-# Iniciar el servicio de cron (Descomentar si es necesario y si el servicio está disponible en Termux)
-# crond start
+    # Esperar 10 minutos antes de la próxima ejecución
+    sleep 600
+done
