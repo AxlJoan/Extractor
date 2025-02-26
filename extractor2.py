@@ -130,11 +130,6 @@ msg['cliente'] = config['cliente']
 msg['estado'] = config['estado']
 msg['municipio'] = config['municipio']
 
-# ------------------------------------------------------------------
-# ELIMINAMOS DUPLICADOS POR number2, text_data Y group_name
-msg.drop_duplicates(subset=['number2', 'text_data', 'group', 'timestamp'], keep='first', inplace=True)
-# ------------------------------------------------------------------
-
 # Guardar datos en un archivo CSV
 csv_file_path = 'messages_processed.csv'
 msg.to_csv(csv_file_path, index=False)
@@ -153,7 +148,7 @@ try:
         database=MYSQL_DB
     )
     with mysql_con.cursor() as cursor:
-        # Crear la tabla en MySQL si no existe
+        # Crear la tabla en MySQL si no existe, agregando una restricción UNIQUE para evitar duplicados
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS extraccion4 (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -172,46 +167,41 @@ try:
             cliente VARCHAR(255),
             estado VARCHAR(255),
             municipio VARCHAR(255),
-            UNIQUE KEY unique_message (number2, text_data, group_name, timestamp)
+            UNIQUE KEY unique_message (chat_row_id, timestamp)
         )
         """)
         
-        # Preparar la consulta SQL para insertar los datos
+        # Preparar la consulta SQL para insertar los datos usando INSERT IGNORE
         add_message = """
-        INSERT INTO extraccion4
+        INSERT IGNORE INTO extraccion4
         (chat_row_id, timestamp, received_timestamp, text_data, from_me, number2, status, verified_name, server, device, group_name, description, cliente, estado, municipio) 
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
         """
         
-        for index, row in msg.iterrows():
-            # Verificar si el mensaje ya existe
-            cursor.execute("""
-            SELECT 1 FROM extraccion4
-            WHERE number2 = %s AND text_data = %s AND group_name = %s AND timestamp = %s
-            """, (row['number2'], row['text_data'], row['group'], row['timestamp']))
-            
-            if cursor.fetchone() is None:  # Si no existe, insertar el mensaje
-                cursor.execute(add_message, (
-                    row['chat_row_id'],
-                    row['timestamp'],
-                    row['received_timestamp'],
-                    row['text_data'],
-                    row['from_me'],
-                    row['number2'],
-                    row['status'],
-                    row['verified_name'],
-                    row['server'],
-                    row['device'],
-                    row['group'],
-                    row['description'],
-                    row['cliente'],
-                    row['estado'],
-                    row['municipio']
-                ))
+        data_to_insert = [
+            (
+                row['chat_row_id'],
+                row['timestamp'],
+                row['received_timestamp'],
+                row['text_data'],
+                row['from_me'],
+                row['number2'],
+                row['status'],
+                row['verified_name'],
+                row['server'],
+                row['device'],
+                row['group'],
+                row['description'],
+                row['cliente'],
+                row['estado'],
+                row['municipio']
+            ) for index, row in msg.iterrows()
+        ]
+        cursor.executemany(add_message, data_to_insert)
         mysql_con.commit()
 except mysql.connector.Error as e:
     print(f"Error conectando a MySQL: {e}")
 finally:
     mysql_con.close()
 
-print("Datos procesados e insertados correctamente.")
+print("Tabla creada (si no existía) y datos subidos con éxito.")
