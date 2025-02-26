@@ -130,6 +130,11 @@ msg['cliente'] = config['cliente']
 msg['estado'] = config['estado']
 msg['municipio'] = config['municipio']
 
+# ------------------------------------------------------------------
+# ELIMINAMOS DUPLICADOS POR number2, text_data Y group
+msg.drop_duplicates(subset=['number2', 'text_data', 'group'], keep='first', inplace=True)
+# ------------------------------------------------------------------
+
 # Guardar datos en un archivo CSV
 csv_file_path = 'messages_processed.csv'
 msg.to_csv(csv_file_path, index=False)
@@ -148,7 +153,7 @@ try:
         database=MYSQL_DB
     )
     with mysql_con.cursor() as cursor:
-        # Crear la tabla en MySQL si no existe, agregando una restricción UNIQUE para evitar duplicados
+        # Crear la tabla en MySQL si no existe
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS extraccion4 (
             id INT AUTO_INCREMENT PRIMARY KEY,
