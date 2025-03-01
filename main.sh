@@ -19,8 +19,8 @@ while true; do
     # Ejecutar el script Python
     python /data/data/com.termux/files/home/Extractor/extractor2.py
 
-    echo "Proceso completado. Esperando 10 minutos antes de la siguiente ejecución..."
+    echo "Proceso completado. Esperando 1 día antes de la siguiente ejecución..."
 
     # Esperar 10 minutos antes de la próxima ejecución
-    sleep 600
+    sleep 18600
 done
