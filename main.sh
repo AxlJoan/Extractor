@@ -22,5 +22,5 @@ while true; do
     echo "Proceso completado. Esperando 1 día antes de la siguiente ejecución..."
 
     # Esperar 10 minutos antes de la próxima ejecución
-    sleep 18600
+    sleep 86400
 done
