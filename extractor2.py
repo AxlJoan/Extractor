@@ -61,9 +61,9 @@ descriptions['jid'] = descriptions['jid'].str.split('@').str[0]
 names = pd.read_sql_query("SELECT * FROM wa_vnames", con_wa)
 names['jid'] = names['jid'].str.split('@').str[0]
 
-# Obtener el número de participantes por grupo
-group_members = pd.read_sql_query("SELECT gid, COUNT(*) AS total FROM wa_group_participants GROUP BY gid", con_wa)
-group_members['gid'] = group_members['gid'].str.split('@').str[0]
+# Obtener el número de participantes por grupo de la tabla `group_membership_count`
+group_members = pd.read_sql_query("SELECT jid, member_count FROM group_membership_count", con_wa)
+group_members['jid'] = group_members['jid'].str.split('@').str[0]  # Limpiar los JIDs
 
 # Procesamiento de datos
 usuarios['user'] = usuarios['user'].astype(str).str[3:]
@@ -132,7 +132,8 @@ try:
         ON DUPLICATE KEY UPDATE total = VALUES(total);
         """
         
-        participant_data = [tuple(row) for row in group_members[['gid', 'total']].itertuples(index=False)]
+        # Usar la tabla 'group_membership_count' para insertar los datos
+        participant_data = [tuple(row) for row in group_members[['jid', 'member_count']].itertuples(index=False)]
         cursor.executemany(add_participants, participant_data)
         mysql_con.commit()
 except mysql.connector.Error as e:
