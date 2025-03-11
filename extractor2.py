@@ -7,7 +7,6 @@ import os
 
 config_file_path = 'config.txt'
 
-# Función para obtener configuración
 def get_or_prompt_config():
     """Lee la configuración de un archivo o la solicita al usuario."""
     if os.path.isfile(config_file_path) and os.path.getsize(config_file_path) > 0:
@@ -25,85 +24,117 @@ def get_or_prompt_config():
                 file.write(f'{key}={value}\n')
     return config
 
-# Obtener configuración
+# Uso de la función para obtener la configuración
 config = get_or_prompt_config()
 
-# Ubicaciones de la base de datos
-msgstore_paths = ['/sdcard/msgstore.db', '/storage/emulated/0/WhatsApp/Databases/msgstore.db']
-wa_db_paths = ['/sdcard/wa.db', '/storage/emulated/0/WhatsApp/Databases/wa.db']
+# Conexión y lectura de la base de datos msgstore.db (con verificación de la existencia del archivo)
+msgstore_path = '/sdcard/msgstore.db'  # Ruta original
+backup_path = '/storage/emulated/0/WhatsApp/Databases/msgstore.db'  # Nueva ruta
 
-# Función para conectar a la base de datos SQLite
-def connect_to_db(paths):
-    for path in paths:
+try:
+    with sqlite3.connect(msgstore_path) as con:
         try:
-            con = sqlite3.connect(path)
-            print(f"Conectado a la base de datos en: {path}")
-            return con
-        except sqlite3.Error as e:
-            print(f"Error conectando a {path}: {e}")
-    print("No se pudo conectar a ninguna base de datos.")
-    exit(1)
+            chv = pd.read_sql_query("SELECT * FROM chat_view", con)
+            print(chv.head())
+        except pd.io.sql.DatabaseError:
+            chv = None  # En caso de que el query no devuelva resultados
 
-# Conectar a las bases de datos
-con_msgstore = connect_to_db(msgstore_paths)
-con_wa = connect_to_db(wa_db_paths)
+        usuarios = pd.read_sql_query("SELECT * from 'jid'", con)
+        msg = pd.read_sql_query("SELECT * from message", con)
+except sqlite3.Error as e:
+    print(f"Error conectando a la base de datos en la ruta {msgstore_path}: {e}")
+    print("Intentando con la nueva ruta...")
+    try:
+        with sqlite3.connect(backup_path) as con:
+            chv = pd.read_sql_query("SELECT * FROM chat_view", con)
+            print(chv.head())
+            usuarios = pd.read_sql_query("SELECT * from 'jid'", con)
+            msg = pd.read_sql_query("SELECT * from message", con)
+    except sqlite3.Error as e:
+        print(f"Error conectando a la base de datos en la nueva ruta {backup_path}: {e}")
+        exit(1)
 
-# Leer datos de la base de datos msgstore.db
-chv = pd.read_sql_query("SELECT * FROM chat_view", con_msgstore)
-usuarios = pd.read_sql_query("SELECT * FROM jid", con_msgstore)
-msg = pd.read_sql_query("SELECT * FROM message", con_msgstore)
+# Conexión y lectura de la base de datos wa.db
+wa_db_path = '/sdcard/wa.db'  # Ruta original
+wa_db_backup_path = '/storage/emulated/0/WhatsApp/Databases/wa.db'  # Nueva ruta
 
-# Leer datos de la base de datos wa.db
-contacts = pd.read_sql_query("SELECT * FROM wa_contacts", con_wa)
-contacts['jid'] = contacts['jid'].str.split('@').str[0]
-descriptions = pd.read_sql_query("SELECT * FROM wa_group_descriptions", con_wa)
-descriptions['jid'] = descriptions['jid'].str.split('@').str[0]
-names = pd.read_sql_query("SELECT * FROM wa_vnames", con_wa)
-names['jid'] = names['jid'].str.split('@').str[0]
-
-# Obtener el número de participantes por grupo de la tabla `group_membership_count`
-group_members = pd.read_sql_query("SELECT jid, member_count FROM group_membership_count", con_wa)
-group_members['jid'] = group_members['jid'].str.split('@').str[0]  # Limpiar los JIDs
+try:
+    with sqlite3.connect(wa_db_path) as con1:
+        contacts = pd.read_sql_query("SELECT * from wa_contacts", con1)
+        contacts['jid'] = contacts['jid'].str.split('@').str[0]
+        descriptions = pd.read_sql_query("SELECT * FROM wa_group_descriptions", con1)
+        descriptions['jid'] = descriptions['jid'].str.split('@').str[0]
+        names = pd.read_sql_query("SELECT * from wa_vnames", con1)
+        names['jid'] = names['jid'].str.split('@').str[0]
+except sqlite3.Error as e:
+    print(f"Error conectando a la base de datos en la ruta {wa_db_path}: {e}")
+    print("Intentando con la nueva ruta...")
+    try:
+        with sqlite3.connect(wa_db_backup_path) as con1:
+            contacts = pd.read_sql_query("SELECT * from wa_contacts", con1)
+            contacts['jid'] = contacts['jid'].str.split('@').str[0]
+            descriptions = pd.read_sql_query("SELECT * FROM wa_group_descriptions", con1)
+            descriptions['jid'] = descriptions['jid'].str.split('@').str[0]
+            names = pd.read_sql_query("SELECT * from wa_vnames", con1)
+            names['jid'] = names['jid'].str.split('@').str[0]
+    except sqlite3.Error as e:
+        print(f"Error conectando a la base de datos en la nueva ruta {wa_db_backup_path}: {e}")
+        exit(1)
 
 # Procesamiento de datos
 usuarios['user'] = usuarios['user'].astype(str).str[3:]
 usuarios['server'] = usuarios['server'].apply(lambda x: 'celular' if x.endswith('.net') else ('grupo' if x.endswith('.us') else 'otro'))
 
-msg = msg.loc[:, ['chat_row_id', 'timestamp', 'received_timestamp', 'text_data', 'from_me']].dropna(subset=['text_data'])
-msg['timestamp'] = pd.to_datetime(msg['timestamp'], unit='ms').dt.strftime('%Y-%m-%d %H:%M:%S')
-msg['received_timestamp'] = pd.to_datetime(msg['received_timestamp'], unit='ms').dt.strftime('%Y-%m-%d %H:%M:%S')
+# Pre-procesamiento de msg
+msg = msg.loc[:, ['chat_row_id', 'timestamp', 'received_timestamp', 'text_data', 'from_me']]
+msg = msg.dropna(subset=['text_data'])
+msg['timestamp'] = pd.to_datetime(msg['timestamp'], unit='ms')
+msg['received_timestamp'] = pd.to_datetime(msg['received_timestamp'], unit='ms')
 
-# Funciones de mapeo
-def mapping(df, column, id):
-    return df.loc[df['_id'] == id, column].iloc[0] if id in df['_id'].values else None
+def mapping2(id):
+    return usuarios.loc[usuarios['_id'] == id, 'user'].iloc[0]
 
-msg['number2'] = msg['chat_row_id'].apply(lambda x: mapping(usuarios, 'user', x))
-msg['server'] = msg['chat_row_id'].apply(lambda x: mapping(usuarios, 'server', x))
-msg['device'] = msg['chat_row_id'].apply(lambda x: mapping(usuarios, 'device', x))
-msg['group'] = msg['chat_row_id'].apply(lambda x: mapping(chv, 'subject', x))
+def mapping3(id):
+    return usuarios.loc[usuarios['_id'] == id, 'server'].iloc[0]
 
-msg = msg.merge(contacts[['jid', 'status']], left_on='number2', right_on='jid', how='left').drop(columns=['jid'])
-msg = msg.merge(names[['jid', 'verified_name']], left_on='number2', right_on='jid', how='left').drop(columns=['jid'])
-msg = msg.merge(descriptions[['jid', 'description']], left_on='number2', right_on='jid', how='left').drop(columns=['jid'])
+def mapping4(id):
+    return usuarios.loc[usuarios['_id'] == id, 'device'].iloc[0]
 
-# Eliminar emojis
+def mapping5(id):
+    return chv.loc[chv['_id'] == id, 'subject'].iloc[0]
+
+msg['number2'] = msg['chat_row_id'].apply(mapping2)
+msg = pd.merge(msg, contacts[['jid', 'status']], left_on='number2', right_on='jid', how='left').drop('jid', axis=1)
+msg = pd.merge(msg, names[['jid', 'verified_name']], left_on='number2', right_on='jid', how='left').drop('jid', axis=1)
+msg['server'] = msg['chat_row_id'].apply(mapping3)
+msg['device'] = msg['chat_row_id'].apply(mapping4)
+msg['group'] = msg['chat_row_id'].apply(mapping5)
+msg = pd.merge(msg, descriptions[['jid', 'description']], left_on='number2', right_on='jid', how='left').drop('jid', axis=1)
+
+msg = msg.where(pd.notnull(msg), None)
+
 def remove_emojis(text):
-    return emoji.replace_emoji(text, replace='') if text else text
+    """Elimina emojis de un texto si no es None."""
+    if text is None:
+        return text
+    return emoji.replace_emoji(text, replace='')
 
 msg['text_data'] = msg['text_data'].apply(remove_emojis)
 msg['description'] = msg['description'].apply(remove_emojis)
 msg['group'] = msg['group'].apply(remove_emojis)
 
-# Agregar datos de configuración
+msg['timestamp'] = pd.to_datetime(msg['timestamp']).dt.strftime('%Y-%m-%d %H:%M:%S')
+msg['received_timestamp'] = pd.to_datetime(msg['received_timestamp']).dt.strftime('%Y-%m-%d %H:%M:%S')
+
 msg['cliente'] = config['cliente']
 msg['estado'] = config['estado']
 msg['municipio'] = config['municipio']
 
-# Guardar datos en CSV
+# Guardar datos en un archivo CSV
 csv_file_path = 'messages_processed.csv'
 msg.to_csv(csv_file_path, index=False)
 
-# Conexión MySQL
+# Datos de conexión a MySQL
 MYSQL_USER = "admin"
 MYSQL_PASS = "S3gur1d4d2025"
 MYSQL_HOST = "158.69.26.160"
@@ -117,28 +148,60 @@ try:
         database=MYSQL_DB
     )
     with mysql_con.cursor() as cursor:
+        # Crear la tabla en MySQL si no existe, agregando una restricción UNIQUE para evitar duplicados
         cursor.execute("""
-        CREATE TABLE IF NOT EXISTS total_participantes (
+        CREATE TABLE IF NOT EXISTS extraccion4 (
             id INT AUTO_INCREMENT PRIMARY KEY,
+            chat_row_id INT,
+            timestamp DATETIME,
+            received_timestamp DATETIME,
+            text_data TEXT,
+            from_me BOOLEAN,
+            number2 VARCHAR(255),
+            status VARCHAR(255),
+            verified_name VARCHAR(255),
+            server VARCHAR(255),
+            device VARCHAR(255),
             group_name VARCHAR(255),
-            total INT,
-            UNIQUE KEY unique_group (group_name)
+            description TEXT,
+            cliente VARCHAR(255),
+            estado VARCHAR(255),
+            municipio VARCHAR(255),
+            UNIQUE KEY unique_message (chat_row_id, timestamp)
         )
         """)
         
-        add_participants = """
-        INSERT INTO total_participantes (group_name, total) 
-        VALUES (%s, %s) 
-        ON DUPLICATE KEY UPDATE total = VALUES(total);
+        # Preparar la consulta SQL para insertar los datos usando INSERT IGNORE
+        add_message = """
+        INSERT IGNORE INTO extraccion4
+        (chat_row_id, timestamp, received_timestamp, text_data, from_me, number2, status, verified_name, server, device, group_name, description, cliente, estado, municipio) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
         """
         
-        # Usar la tabla 'group_membership_count' para insertar los datos
-        participant_data = [tuple(row) for row in group_members[['jid', 'member_count']].itertuples(index=False)]
-        cursor.executemany(add_participants, participant_data)
+        data_to_insert = [
+            (
+                row['chat_row_id'],
+                row['timestamp'],
+                row['received_timestamp'],
+                row['text_data'],
+                row['from_me'],
+                row['number2'],
+                row['status'],
+                row['verified_name'],
+                row['server'],
+                row['device'],
+                row['group'],
+                row['description'],
+                row['cliente'],
+                row['estado'],
+                row['municipio']
+            ) for index, row in msg.iterrows()
+        ]
+        cursor.executemany(add_message, data_to_insert)
         mysql_con.commit()
 except mysql.connector.Error as e:
-    print(f"Error en MySQL: {e}")
+    print(f"Error conectando a MySQL: {e}")
 finally:
     mysql_con.close()
 
-print("Datos subidos con éxito.")
+print("Tabla creada (si no existía) y datos subidos con éxito.")
