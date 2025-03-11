@@ -5,12 +5,23 @@ import os
 
 # Leer cliente desde config.txt
 config_path = "config.txt"
+cliente = None
+
 if os.path.exists(config_path):
-    with open(config_path, "r") as f:
-        cliente = f.read().strip()
+    with open(config_path, "r", encoding="utf-8") as f:
+        for line in f:
+            if line.startswith("cliente="):  # Buscar la línea con cliente=
+                cliente = line.split("=")[1].strip()  # Extraer el valor y limpiar espacios
+                break
 else:
     print("Error: No se encontró config.txt")
     exit(1)
+
+if not cliente:
+    print("Error: No se pudo leer el cliente desde config.txt")
+    exit(1)
+
+print(f"Cliente leído: {cliente}")
 
 # Rutas de la base de datos wa.db
 wa_db_path = '/sdcard/wa.db'  # Ruta original
