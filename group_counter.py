@@ -70,9 +70,9 @@ try:
             cursor.execute("ALTER TABLE total_participantes ADD COLUMN cliente VARCHAR(255);")
             mysql_con.commit()
             print("Columna 'cliente' añadida a total_participantes.")
-
-        # Crear la tabla si no existe
-        cursor.execute("""
+        
+        # Asegurarse de que la tabla existe, en caso de que no se haya creado previamente
+        cursor.execute(""" 
         CREATE TABLE IF NOT EXISTS total_participantes (
             id INT AUTO_INCREMENT PRIMARY KEY,
             group_name VARCHAR(255),
@@ -81,12 +81,12 @@ try:
             UNIQUE KEY unique_cliente_group (cliente, group_name)
         )
         """)
-
+        
         # Actualizar o insertar el total de contactos con el cliente
         add_total = """
         INSERT INTO total_participantes (group_name, total, cliente)
         VALUES (%s, %s, %s)
-        ON DUPLICATE KEY UPDATE total = VALUES(total);
+        ON DUPLICATE KEY UPDATE total = VALUES(total), cliente = VALUES(cliente);
         """
         data = ("total_contactos", total_numbers, cliente)
         cursor.execute(add_total, data)
