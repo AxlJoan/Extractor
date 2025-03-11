@@ -1,3 +1,12 @@
+import sqlite3
+import pandas as pd
+from datetime import datetime
+import emoji
+import mysql.connector
+import os
+
+config_file_path = 'config.txt'
+
 # Función para obtener configuración
 def get_or_prompt_config():
     """Lee la configuración de un archivo o la solicita al usuario."""
