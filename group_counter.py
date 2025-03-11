@@ -7,10 +7,10 @@ import os
 wa_db_path = '/sdcard/wa.db'  # Ruta original
 wa_db_backup_path = '/storage/emulated/0/WhatsApp/Databases/wa.db'  # Ruta de respaldo
 
-# Conexión a wa.db y consulta de la tabla "wa_wa_contacts"
+# Conexión a wa.db y consulta de la tabla "wa_contacts"
 try:
     with sqlite3.connect(wa_db_path) as con:
-        query = "SELECT jid FROM wa_wa_contacts"
+        query = "SELECT jid FROM wa_contacts"
         contacts_df = pd.read_sql_query(query, con)
         print("Consulta exitosa en la ruta original.")
 except sqlite3.Error as e:
@@ -18,7 +18,7 @@ except sqlite3.Error as e:
     print("Intentando con la nueva ruta...")
     try:
         with sqlite3.connect(wa_db_backup_path) as con:
-            query = "SELECT jid FROM wa_wa_contacts"
+            query = "SELECT jid FROM wa_contacts"
             contacts_df = pd.read_sql_query(query, con)
             print("Consulta exitosa en la ruta de respaldo.")
     except sqlite3.Error as e:
