@@ -49,6 +49,12 @@ except sqlite3.Error as e:
 total_numbers = len(contacts_df['jid'].unique())
 print(f"Cantidad total de números: {total_numbers}")
 
+# Datos de conexión a MySQL
+MYSQL_USER = "admin"
+MYSQL_PASS = "S3gur1d4d2025"
+MYSQL_HOST = "158.69.26.160"
+MYSQL_DB = "data_wa"
+
 # Agregar la fecha y hora actual
 from datetime import datetime
 import mysql.connector
