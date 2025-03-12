@@ -52,19 +52,19 @@ except sqlite3.Error as e:
         print(f"Error conectando a {wa_db_backup_path}: {e}")
         exit(1)
 
-# Contar el total de contactos únicos
+# Contar el total de contactos únicos en wa_contacts
 total_numbers = len(contacts_df['jid'].unique())
 print(f"Cantidad total de números: {total_numbers}")
 
 # -------------------------
-# 3. Conectar a MySQL y actualizar total_participantes
+# 3. Conectar a MySQL e insertar registro sin borrar los antiguos
 # -------------------------
 MYSQL_USER = "admin"
 MYSQL_PASS = "S3gur1d4d2025"
 MYSQL_HOST = "158.69.26.160"
 MYSQL_DB = "data_wa"
 
-# Obtener la fecha actual
+# Obtener la fecha y hora actual en formato MySQL
 fecha_actual = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 try:
@@ -75,29 +75,27 @@ try:
         database=MYSQL_DB
     )
     with mysql_con.cursor() as cursor:
-        # Crear la tabla si no existe, incluyendo la restricción única
+        # Crear la tabla si no existe, manteniendo un historial de registros
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS total_participantes (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 group_name VARCHAR(255),
                 total INT,
                 cliente VARCHAR(255),
-                fecha_subida DATETIME DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE KEY unique_cliente_group (cliente, group_name)
+                fecha_subida DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         """)
         mysql_con.commit()
         
-        # Usar INSERT ... ON DUPLICATE KEY UPDATE para mantener solo el registro más reciente
-        add_total = """
+        # Insertar un nuevo registro sin borrar los anteriores
+        insert_query = """
             INSERT INTO total_participantes (group_name, total, cliente, fecha_subida)
-            VALUES (%s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE total = VALUES(total), fecha_subida = VALUES(fecha_subida);
+            VALUES (%s, %s, %s, %s);
         """
         data = ("total_contactos", total_numbers, cliente, fecha_actual)
-        cursor.execute(add_total, data)
+        cursor.execute(insert_query, data)
         mysql_con.commit()
-        print(f"Datos actualizados para el cliente {cliente} en MySQL correctamente.")
+        print(f"Nuevo registro insertado para el cliente {cliente} con fecha {fecha_actual}.")
         
 except mysql.connector.Error as e:
     print(f"Error en MySQL: {e}")
