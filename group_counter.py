@@ -86,9 +86,10 @@ try:
         add_total = """
         INSERT INTO total_participantes (group_name, total, cliente)
         VALUES (%s, %s, %s)
-        ON DUPLICATE KEY UPDATE total = VALUES(total), cliente = VALUES(cliente);
+        ON DUPLICATE KEY UPDATE total = VALUES(total);
         """
         data = ("total_contactos", total_numbers, cliente)
+        
         cursor.execute(add_total, data)
         mysql_con.commit()
         print(f"Datos actualizados para cliente {cliente} en MySQL correctamente.")
