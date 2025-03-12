@@ -49,11 +49,12 @@ except sqlite3.Error as e:
 total_numbers = len(contacts_df['jid'].unique())
 print(f"Cantidad total de números: {total_numbers}")
 
-# Datos de conexión a MySQL
-MYSQL_USER = "admin"
-MYSQL_PASS = "S3gur1d4d2025"
-MYSQL_HOST = "158.69.26.160"
-MYSQL_DB = "data_wa"
+# Agregar la fecha y hora actual
+from datetime import datetime
+import mysql.connector
+
+# Obtener la fecha y hora actual en formato MySQL
+fecha_actual = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 try:
     mysql_con = mysql.connector.connect(
@@ -63,36 +64,24 @@ try:
         database=MYSQL_DB
     )
     with mysql_con.cursor() as cursor:
-        # Verificar si la columna cliente existe, si no, agregarla
-        cursor.execute("SHOW COLUMNS FROM total_participantes LIKE 'cliente';")
-        column_exists = cursor.fetchone()
-        if not column_exists:
-            cursor.execute("ALTER TABLE total_participantes ADD COLUMN cliente VARCHAR(255);")
-            mysql_con.commit()
-            print("Columna 'cliente' añadida a total_participantes.")
-        
-        # Asegurarse de que la tabla existe, en caso de que no se haya creado previamente
-        cursor.execute(""" 
-        CREATE TABLE IF NOT EXISTS total_participantes (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            group_name VARCHAR(255),
-            total INT,
-            cliente VARCHAR(255),
-            UNIQUE KEY unique_cliente_group (cliente, group_name)
-        )
-        """)
-        
-        # Actualizar o insertar el total de contactos con el cliente
-        add_total = """
-        INSERT INTO total_participantes (group_name, total, cliente)
-        VALUES (%s, %s, %s)
-        ON DUPLICATE KEY UPDATE total = VALUES(total);
+        # Eliminar registros antiguos del mismo cliente antes de insertar el nuevo
+        delete_old = """
+        DELETE FROM total_participantes
+        WHERE cliente = %s AND fecha_subida < %s;
         """
-        data = ("total_contactos", total_numbers, cliente)
-        
-        cursor.execute(add_total, data)
+        cursor.execute(delete_old, (cliente, fecha_actual))
         mysql_con.commit()
-        print(f"Datos actualizados para cliente {cliente} en MySQL correctamente.")
+        print(f"Registros antiguos eliminados para el cliente {cliente}.")
+
+        # Insertar nuevo registro con la fecha actual
+        insert_new = """
+        INSERT INTO total_participantes (group_name, total, cliente, fecha_subida)
+        VALUES (%s, %s, %s, %s);
+        """
+        data = ("total_contactos", total_numbers, cliente, fecha_actual)
+        cursor.execute(insert_new, data)
+        mysql_con.commit()
+        print(f"Datos insertados para el cliente {cliente} con fecha {fecha_actual}.")
 except mysql.connector.Error as e:
     print(f"Error en MySQL: {e}")
 finally:
