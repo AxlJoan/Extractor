@@ -52,7 +52,7 @@ except sqlite3.Error as e:
         print(f"Error conectando a {wa_db_backup_path}: {e}")
         exit(1)
 
-# Contar el total de contactos únicos en wa_contacts
+# Contar el total de contactos únicos
 total_numbers = len(contacts_df['jid'].unique())
 print(f"Cantidad total de números: {total_numbers}")
 
@@ -64,7 +64,7 @@ MYSQL_PASS = "S3gur1d4d2025"
 MYSQL_HOST = "158.69.26.160"
 MYSQL_DB = "data_wa"
 
-# Obtener la fecha y hora actual en formato MySQL
+# Obtener la fecha actual
 fecha_actual = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 try:
@@ -75,36 +75,29 @@ try:
         database=MYSQL_DB
     )
     with mysql_con.cursor() as cursor:
-        # Asegurar que la tabla total_participantes existe
+        # Crear la tabla si no existe, incluyendo la restricción única
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS total_participantes (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 group_name VARCHAR(255),
                 total INT,
                 cliente VARCHAR(255),
-                fecha_subida DATETIME DEFAULT CURRENT_TIMESTAMP
+                fecha_subida DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_cliente_group (cliente, group_name)
             )
         """)
         mysql_con.commit()
         
-        # Insertar un nuevo registro con la fecha actual
-        insert_new = """
+        # Usar INSERT ... ON DUPLICATE KEY UPDATE para mantener solo el registro más reciente
+        add_total = """
             INSERT INTO total_participantes (group_name, total, cliente, fecha_subida)
             VALUES (%s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE total = VALUES(total), fecha_subida = VALUES(fecha_subida);
         """
         data = ("total_contactos", total_numbers, cliente, fecha_actual)
-        cursor.execute(insert_new, data)
+        cursor.execute(add_total, data)
         mysql_con.commit()
-        print(f"Datos insertados para el cliente {cliente} con fecha {fecha_actual}.")
-        
-        # Eliminar los registros antiguos para ese cliente (con fecha menor a la fecha actual)
-        delete_old = """
-            DELETE FROM total_participantes
-            WHERE cliente = %s AND fecha_subida < %s;
-        """
-        cursor.execute(delete_old, (cliente, fecha_actual))
-        mysql_con.commit()
-        print(f"Registros antiguos eliminados para el cliente {cliente}.")
+        print(f"Datos actualizados para el cliente {cliente} en MySQL correctamente.")
         
 except mysql.connector.Error as e:
     print(f"Error en MySQL: {e}")
