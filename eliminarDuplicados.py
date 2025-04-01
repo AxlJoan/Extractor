@@ -10,29 +10,39 @@ conn = mysql.connector.connect(
 
 cursor = conn.cursor()
 
-# Desactivar el modo seguro
-cursor.execute("SET SQL_SAFE_UPDATES = 0;")
+try:
+    print("🔄 Iniciando eliminación de duplicados...")
 
-# Eliminar duplicados
-delete_query = """
-DELETE FROM extraccion4
-WHERE id IN (
-    SELECT id FROM (
-        SELECT id, 
-               ROW_NUMBER() OVER (PARTITION BY text_data, received_timestamp ORDER BY id) AS fila
-        FROM extraccion4
-    ) AS subquery
-    WHERE fila > 1
-);
-"""
-cursor.execute(delete_query)
+    # Desactivar el modo seguro
+    cursor.execute("SET SQL_SAFE_UPDATES = 0;")
 
-# Reactivar el modo seguro
-cursor.execute("SET SQL_SAFE_UPDATES = 1;")
+    # Eliminar duplicados
+    delete_query = """
+    DELETE FROM extraccion4
+    WHERE id IN (
+        SELECT id FROM (
+            SELECT id, 
+                   ROW_NUMBER() OVER (PARTITION BY text_data, received_timestamp ORDER BY id) AS fila
+            FROM extraccion4
+        ) AS subquery
+        WHERE fila > 1
+    );
+    """
+    cursor.execute(delete_query)
 
-# Confirmar cambios
-conn.commit()
+    # Reactivar el modo seguro
+    cursor.execute("SET SQL_SAFE_UPDATES = 1;")
 
-# Cerrar conexión
-cursor.close()
-conn.close()
+    # Confirmar cambios
+    conn.commit()
+
+    print("✅ Eliminación de duplicados completada con éxito.")
+
+except Exception as e:
+    print(f"❌ Error durante la eliminación de duplicados: {e}")
+
+finally:
+    # Cerrar conexión
+    cursor.close()
+    conn.close()
+    print("🔒 Conexión cerrada.")
