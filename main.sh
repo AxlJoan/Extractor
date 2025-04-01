@@ -19,12 +19,15 @@ while true; do
     # Ejecutar el script Python
     python /data/data/com.termux/files/home/Extractor/extractor2.py
 
+    # Ejecutar el script Python
+    python /data/data/com.termux/files/home/Extractor/eliminarDuplicados.py
+
     echo "Ejecutando el contador de integrantes en grupos..."
     # Ejecutar el script Python
     python /data/data/com.termux/files/home/Extractor/group_counter.py
 
     echo "Proceso completado. Esperando 1 día antes de la siguiente ejecución..."
 
-    # Esperar 10 minutos antes de la próxima ejecución
-    sleep 86400
+    # Esperar 5 minutos antes de la próxima ejecución
+    sleep 300
 done
