@@ -45,7 +45,8 @@ def limpiar_registros_antiguos():
         WITH Ranked AS (
             SELECT 
                 id,
-                ROW_NUMBER() OVER (PARTITION BY cliente ORDER BY fecha_subida DESC) AS rn
+                ROW_NUMBER() OVER (PARTITION BY cliente, dispositivo_id
+                ORDER BY fecha_subida DESC) AS rn
             FROM total_participantes
         )
         DELETE FROM total_participantes
