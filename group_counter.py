@@ -29,6 +29,12 @@ if not cliente:
     exit(1)
 print(f"Cliente leído: {cliente}")
 
+dispositivo_id = config.get("municipio", None)
+if not cliente:
+    print("Error: No se pudo leer 'cliente' desde config.txt")
+    exit(1)
+print(f"ID leído: {cliente}")
+
 # -------------------------
 # 2. Conectar a wa.db y contar contactos
 # -------------------------
@@ -82,6 +88,7 @@ try:
                 group_name VARCHAR(255),
                 total INT,
                 cliente VARCHAR(255),
+                dispositivo_id VARCHAR(100),
                 fecha_subida DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         """)
@@ -89,10 +96,10 @@ try:
         
         # Insertar un nuevo registro sin borrar los anteriores
         insert_query = """
-            INSERT INTO total_participantes (group_name, total, cliente, fecha_subida)
-            VALUES (%s, %s, %s, %s);
+            INSERT INTO total_participantes (group_name, total, cliente, dispositivo_id, fecha_subida)
+            VALUES (%s, %s, %s, %s, %s);
         """
-        data = ("total_contactos", total_numbers, cliente, fecha_actual)
+        data = ("total_contactos", total_numbers, cliente, dispositivo_id, fecha_actual)
         cursor.execute(insert_query, data)
         mysql_con.commit()
         print(f"Nuevo registro insertado para el cliente {cliente} con fecha {fecha_actual}.")
