@@ -30,10 +30,10 @@ if not cliente:
 print(f"Cliente leído: {cliente}")
 
 dispositivo_id = config.get("municipio", None)
-if not cliente:
-    print("Error: No se pudo leer 'cliente' desde config.txt")
+if not dispositivo_id:
+    print("Error: No se pudo leer 'municipio' desde config.txt")
     exit(1)
-print(f"ID leído: {cliente}")
+print(f"ID leído: {dispositivo_id}")
 
 # -------------------------
 # 2. Conectar a wa.db y contar contactos
