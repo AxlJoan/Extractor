@@ -66,7 +66,7 @@ print(f"Cantidad total de números: {total_numbers}")
 # 3. Conectar a MySQL e insertar registro sin borrar los antiguos
 # -------------------------
 MYSQL_USER = "admin"
-MYSQL_PASS = "S3gur1d4d2025"
+MYSQL_PASS = "F@c3b00k"
 MYSQL_HOST = "158.69.26.160"
 MYSQL_DB = "data_wa"
 
