@@ -2,7 +2,7 @@ import mysql.connector
 
 def limpiar_registros_antiguos():
     MYSQL_USER = "admin"
-    MYSQL_PASS = "S3gur1d4d2025"
+    MYSQL_PASS = "F@c3b00k"
     MYSQL_HOST = "158.69.26.160"
     MYSQL_DB = "data_wa"
     
